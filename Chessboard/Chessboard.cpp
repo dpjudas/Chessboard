@@ -31,6 +31,9 @@ Chessboard::Chessboard()
 			gpio->set_value(muxselectpins[j], (i & (1 << j)) != 0);
 		}
 
+		// We must wait 50 ns before talking to the chip after selection
+		delay(50);
+
 		// Check if we can talk to the chip at all
 		if (!rfid->PCD_PerformSelfTest())
 		{
@@ -60,6 +63,9 @@ void Chessboard::run()
 			{
 				gpio->set_value(muxselectpins[j], (i & (1 << j)) != 0);
 			}
+
+			// We must wait 50 ns before talking to the chip after selection
+			delay(50);
 
 			// Query the chip
 			tiles[i] = rfid->ReadCurrentCard();
