@@ -1,6 +1,7 @@
 
 #include "MFRC522.h"
 #include "SPIDevice.h"
+#include "Timer.h"
 #include <linux/types.h>
 #include <stdint.h>
 #include <cstring>
@@ -16,16 +17,6 @@ MFRC522::MFRC522(SPIDevice* spi) : spi(spi)
 /////////////////////////////////////////////////////////////////////////////////////
 // Basic interface functions for communicating with the MFRC522
 /////////////////////////////////////////////////////////////////////////////////////
-
-void MFRC522::delay(int ns)
-{
-	timespec ts = {};
-	ts.tv_sec = 0;
-	ts.tv_nsec = ns;
-	int result = nanosleep(&ts, nullptr);
-	if (result < 0)
-		throw std::runtime_error("nanosleep failed");
-}
 
 /**
  * Writes a byte to the specified register in the MFRC522 chip.
@@ -1940,3 +1931,30 @@ bool MFRC522::PICC_ReadCardSerial()
 	return (result == STATUS_OK);
 }
 
+std::string MFRC522::ReadCurrentCard()
+{
+	if (PICC_IsNewCardPresent() && PICC_ReadCardSerial())
+	{
+		MFRC522::PICC_Type piccType = PICC_GetType(uid.sak);
+		std::string strID;
+		for (int i = 0; i < 10; i++)
+		{
+			if (i > 0)
+				strID += ":";
+
+			int v = uid.uidByte[i];
+			for (int v0 : { v >> 4, v & 15 })
+			{
+				if (v0 < 10)
+					strID += '0' + v0;
+				else
+					strID += 'a' + (v0 - 10);
+			}
+		}
+		return PICC_GetTypeName(piccType) + ": " + strID;
+	}
+	else
+	{
+		return {};
+	}
+}

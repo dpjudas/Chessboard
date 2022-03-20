@@ -282,10 +282,10 @@ public:
 	/////////////////////////////////////////////////////////////////////////////////////
 	bool PICC_IsNewCardPresent();
 	bool PICC_ReadCardSerial();
+	std::string ReadCurrentCard();
 
 private:
 	uint8_t MIFARE_TwoStepHelper(uint8_t command, uint8_t blockAddr, long data);
-	void delay(int ns);
 
 	SPIDevice* spi = nullptr;
 };
