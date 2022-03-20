@@ -47,6 +47,8 @@ Chessboard::Chessboard()
 void Chessboard::run()
 {
 	std::map<std::string, int> seenCards;
+	std::vector<std::string> seenCardIndexNames;
+	seenCardIndexNames.push_back("(empty)");
 	int nextId = 1;
 
 	while (true)
@@ -68,6 +70,7 @@ void Chessboard::run()
 		{
 			if (!tiles[i].empty() && seenCards[tiles[i]] == 0)
 			{
+				seenCardIndexNames.push_back(tiles[i]);
 				seenCards[tiles[i]] = nextId++;
 			}
 		}
@@ -76,7 +79,7 @@ void Chessboard::run()
 		mvprintw(0, 40, "RFID Cards:");
 		for (int i = 1; i < nextId; i++)
 		{
-			mvprintw(i, 40, "#%d %s", i, tiles[i].c_str());
+			mvprintw(i, 40, "#%d %s", i, seenCardIndexNames[i].c_str());
 		}
 
 		// Print the board
