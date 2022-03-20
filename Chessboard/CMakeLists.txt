@@ -9,9 +9,10 @@ set(SOURCES
 	"GPIODevice.cpp"
 	"GPIODevice.h"
 	"Timer.cpp"
-	"Timer.h")
+	"Timer.h"
+	"Main.cpp")
 
 add_executable(chessboard ${SOURCES})
-target_link_libraries(chessboard "gpiod")
+target_link_libraries(chessboard "gpiod" "curses")
 
 install(TARGETS chessboard DESTINATION /home/pi/chess)

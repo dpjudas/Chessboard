@@ -1,40 +1,117 @@
 
-#include "SPIDevice.h"
-#include "MFRC522.h"
-#include "GPIODevice.h"
+#include "Chessboard.h"
 #include "Timer.h"
 #include <iostream>
+#include <curses.h>
 
-int main(int argc, char** argv)
+static const int num_connected_rfids = 2; // increase up to 16
+
+Chessboard::Chessboard()
 {
-	try
+	gpio = std::make_unique<GPIODevice>("chess");
+	spi = std::make_unique<SPIDevice>();
+	rfid = std::make_unique<MFRC522>(spi.get());
+
+	// Init gpio
+	gpio->request_output(resetpin, false);
+	for (int i = 0; i < 4; i++)
+		gpio->request_output(muxselectpins[i], false);
+
+	// Reset the bus
+	gpio->set_value(resetpin, false);
+	delay(50);
+	gpio->set_value(resetpin, true);
+
+	// Reset the rfid chips
+	for (int i = 0; i < num_connected_rfids; i++)
 	{
-		auto gpio = std::make_unique<GPIODevice>("chess");
-		auto spi = std::make_unique<SPIDevice>();
-		auto rfid = std::make_unique<MFRC522>(spi.get());
-
-		// Reset everything on the bus
-		int resetpin = 14;
-		gpio->request_output(resetpin, false);
-		delay(50);
-		gpio->set_value(resetpin, true);
-
-		rfid->PCD_Init();
-
-		while (true)
+		// Select the chip
+		for (int j = 0; j < 4; j++)
 		{
-			std::string card = rfid->ReadCurrentCard();
-			if (!card.empty())
+			gpio->set_value(muxselectpins[j], (i & (1 << j)) != 0);
+		}
+
+		// Check if we can talk to the chip at all
+		if (!rfid->PCD_PerformSelfTest())
+		{
+			throw std::runtime_error("Self test failed for rfid chip #" + std::to_string(i));
+		}
+
+		// Send init code
+		rfid->PCD_Init();
+	}
+
+	init_curses();
+}
+
+void Chessboard::run()
+{
+	std::map<std::string, int> seenCards;
+	int nextId = 1;
+
+	while (true)
+	{
+		for (int i = 0; i < num_connected_rfids; i++)
+		{
+			// Select the chip
+			for (int j = 0; j < 4; j++)
 			{
-				std::cout << card.c_str() << std::endl;
+				gpio->set_value(muxselectpins[j], (i & (1 << j)) != 0);
+			}
+
+			// Query the chip
+			tiles[i] = rfid->ReadCurrentCard();
+		}
+
+		// Assign a number to the card if it hasn't been seen before
+		for (int i = 0; i < 64; i++)
+		{
+			if (!tiles[i].empty() && seenCards[tiles[i]] == 0)
+			{
+				seenCards[tiles[i]] = nextId++;
 			}
 		}
-	}
-	catch (const std::exception& e)
-	{
-		std::cout << e.what() << std::endl;
-		return 255;
-	}
 
-	return 0;
+		// Print the list of seen cards
+		mvprintw(0, 40, "RFID Cards:");
+		for (int i = 1; i < nextId; i++)
+		{
+			mvprintw(i, 40, "#%d %s", i, tiles[i].c_str());
+		}
+
+		// Print the board
+		for (int y = 0; y < 8; y++)
+		{
+			for (int x = 0; x < 8; x++)
+			{
+				int idx = x + y * 8;
+
+				mvprintw(y * 2, x * 3, "+--+");
+				if (!tiles[idx].empty())
+				{
+					mvprintw(y * 2 + 1, x * 3, x == 7 ? "|%02d" : "|%02d", seenCards[tiles[idx]]);
+				}
+				else
+				{
+					mvprintw(y * 2 + 1, x * 3, x == 7 ? "|  |" : "|  ");
+				}
+
+				if (y == 7)
+					mvprintw(y * 2 + 2, x * 3, x == 7 ? "+--+" : "+--");
+			}
+		}
+
+		refresh();
+	}
+}
+
+void Chessboard::init_curses()
+{
+	setlocale(LC_ALL, "");
+	initscr();
+	cbreak();
+	noecho();
+	intrflush(stdscr, FALSE);
+	keypad(stdscr, TRUE);
+	clear();
 }

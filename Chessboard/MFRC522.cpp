@@ -357,7 +357,7 @@ bool MFRC522::PCD_PerformSelfTest()
 		reference = MFRC522_firmware_referenceV2_0;
 		break;
 	default:	// Unknown version
-		std::cout << "Unknown firmware version " << std::hex << (int)version << std::dec << std::endl;
+		//std::cout << "Unknown firmware version " << std::hex << (int)version << std::dec << std::endl;
 		return false;
 	}
 
@@ -366,11 +366,12 @@ bool MFRC522::PCD_PerformSelfTest()
 	{
 		if (result[i] != reference[i])
 		{
+			/*
 			std::cout << "Firmware bytes: " << std::hex;
 			for (i = 0; i < 64; i++)
 				std::cout << result[i];
 			std::cout << std::dec << std::endl;
-
+			*/
 			return false;
 		}
 	}
