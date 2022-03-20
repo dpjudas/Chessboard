@@ -25,6 +25,8 @@ Chessboard::Chessboard()
 	// Reset the rfid chips
 	for (int i = 0; i < num_connected_rfids; i++)
 	{
+		delay(200); // test delay
+
 		// Select the chip
 		for (int j = 0; j < 4; j++)
 		{
@@ -58,6 +60,8 @@ void Chessboard::run()
 	{
 		for (int i = 0; i < num_connected_rfids; i++)
 		{
+			delay(200); // test delay
+
 			// Select the chip
 			for (int j = 0; j < 4; j++)
 			{
